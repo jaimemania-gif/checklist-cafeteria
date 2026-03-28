@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Checklist">
+<title>Checklist Cafetería</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; background: #F2F2F7; min-height: 100vh; }
+
+/* HEADER */
+.header { background: #fff; padding: 16px 20px 12px; border-bottom: 0.5px solid #E0E0E0; position: sticky; top: 0; z-index: 100; }
+.header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.header-title { font-size: 20px; font-weight: 700; color: #1C1C1E; }
+.header-date { font-size: 13px; color: #8E8E93; }
+.reset-all { font-size: 13px; color: #FF3B30; background: none; border: none; cursor: pointer; padding: 4px 0; }
+
+/* TABS */
+.tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex-shrink: 0; font-size: 13px; font-weight: 500;
+  padding: 7px 16px; border-radius: 20px;
+  border: 1.5px solid #E0E0E0;
+  background: #F2F2F7; color: #6C6C70;
+  cursor: pointer; transition: all 0.15s;
+}
+.tab.active { color: #fff; border-color: transparent; }
+.tab[data-tab="apertura"].active    { background: #185FA5; }
+.tab[data-tab="produccion"].active  { background: #534AB7; }
+.tab[data-tab="contenido"].active   { background: #7B3F9E; }
+.tab[data-tab="ligero"].active      { background: #185FA5; }
+.tab[data-tab="cierre"].active      { background: #636366; }
+
+/* PANELS */
+.panel { display: none; padding: 16px 16px 40px; }
+.panel.active { display: block; }
+
+/* PROGRESS */
+.progress-card {
+  background: #fff; border-radius: 14px; padding: 14px 16px;
+  margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.progress-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.progress-name { font-size: 15px; font-weight: 600; color: #1C1C1E; }
+.progress-pct { font-size: 14px; font-weight: 600; }
+.pct-apertura   { color: #185FA5; }
+.pct-produccion { color: #534AB7; }
+.pct-contenido  { color: #7B3F9E; }
+.pct-ligero     { color: #185FA5; }
+.pct-cierre     { color: #636366; }
+.progress-bar-bg { height: 6px; background: #E5E5EA; border-radius: 3px; overflow: hidden; }
+.progress-bar-fill { height: 100%; border-radius: 3px; transition: width 0.35s ease; }
+.fill-apertura   { background: #185FA5; }
+.fill-produccion { background: #534AB7; }
+.fill-contenido  { background: #7B3F9E; }
+.fill-ligero     { background: #185FA5; }
+.fill-cierre     { background: #636366; }
+
+/* SECTIONS */
+.section-card { background: #fff; border-radius: 14px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #8E8E93; padding: 10px 16px 6px; background: #F9F9F9; border-bottom: 0.5px solid #F0F0F0; }
+
+/* ITEMS */
+.item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 13px 16px; cursor: pointer;
+  border-bottom: 0.5px solid #F0F0F0; transition: background 0.1s;
+  user-select: none;
+}
+.item:last-child { border-bottom: none; }
+.item:active { background: #F2F2F7; }
+.item.done .item-label { text-decoration: line-through; color: #AEAEB2; }
+.item.done .item-hint { color: #C7C7CC; }
+
+.checkbox {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid #C7C7CC;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; margin-top: 0;
+}
+.item.done .checkbox { background: #34C759; border-color: #34C759; }
+.checkmark { display: none; }
+.item.done .checkmark { display: block; }
+
+.item-body { flex: 1; padding-top: 2px; }
+.item-label { font-size: 16px; color: #1C1C1E; line-height: 1.4; }
+.item-hint { font-size: 13px; color: #8E8E93; margin-top: 2px; line-height: 1.4; }
+
+/* QUESTION */
+.question-card { background: #fff; border-radius: 14px; margin-bottom: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.question-label { font-size: 13px; font-weight: 600; color: #636366; margin-bottom: 8px; }
+.question-input {
+  width: 100%; padding: 10px 12px; border-radius: 10px;
+  border: 1.5px solid #E5E5EA; background: #F9F9F9;
+  font-size: 15px; font-family: inherit; color: #1C1C1E;
+  resize: none; line-height: 1.5; outline: none;
+}
+.question-input:focus { border-color: #185FA5; background: #fff; }
+
+/* DONE BANNER */
+.done-banner {
+  display: none; background: #E8F8EE; border-radius: 12px;
+  padding: 14px 16px; text-align: center;
+  font-size: 15px; font-weight: 600; color: #34C759;
+  margin-top: 4px;
+}
+
+/* RESET BTN per panel */
+.reset-panel-btn {
+  width: 100%; margin-top: 8px; padding: 12px;
+  background: #fff; border: 1.5px solid #E0E0E0;
+  border-radius: 12px; font-size: 15px; color: #636366;
+  cursor: pointer; font-family: inherit;
+}
+.reset-panel-btn:active { background: #F2F2F7; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="header-title">Checklist Cafetería</div>
+    <div class="header-date" id="fecha"></div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" data-tab="apertura" onclick="switchTab('apertura')">☀️ Apertura</div>
+    <div class="tab" data-tab="produccion" onclick="switchTab('produccion')">👨‍🍳 Producción</div>
+    <div class="tab" data-tab="contenido" onclick="switchTab('contenido')">💡 Contenido</div>
+    <div class="tab" data-tab="ligero" onclick="switchTab('ligero')">📋 T. Ligero</div>
+    <div class="tab" data-tab="cierre" onclick="switchTab('cierre')">🔒 Cierre</div>
+  </div>
+</div>
+
+<!-- APERTURA -->
+<div class="panel active" id="panel-apertura">
+  <div class="progress-card">
+    <div class="progress-top">
+      <span class="progress-name">Apertura &nbsp;08:00 – 09:00</span>
+      <span class="progress-pct pct-apertura" id="txt-apertura">0%</span>
+    </div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill fill-apertura" id="bar-apertura" style="width:0%"></div></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Al llegar</div>
+    <div class="item" onclick="toggle(this,'apertura')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Abrir la ventana del negocio</div></div></div>
+    <div class="item" onclick="toggle(this,'apertura')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Limpiar la barra de servicio</div></div></div>
+    <div class="item" onclick="toggle(this,'apertura')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Sacar sillas y letrero</div></div></div>
+    <div class="item" onclick="toggle(this,'apertura')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Ponerle bolsas a los botes de basura</div></div></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Equipo y mise en place</div>
+    <div class="item" onclick="toggle(this,'apertura')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Poner agua caliente para cafés</div></div></div>
+    <div class="item" onclick="toggle(this,'apertura')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Prender la cafetera</div></div></div>
+    <div class="item" onclick="toggle(this,'apertura')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Acomodar utensilios: azúcar y complementos</div></div></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Decisión del día</div>
+    <div class="item" onclick="toggle(this,'apertura')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Revisar inventario</div><div class="item-hint">Salsas, jarabes, waffles, cheesecake, carne, pollo, queso, chipotle</div></div></div>
+  </div>
+
+  <div class="question-card">
+    <div class="question-label">¿Qué produzco hoy? (una sola cosa)</div>
+    <textarea class="question-input" rows="2" placeholder="Ej: caramelo casero, waffles, cheesecake..."></textarea>
+  </div>
+
+  <div class="done-banner" id="done-apertura">Apertura completa. ¡Listo para abrir!</div>
+  <button class="reset-panel-btn" onclick="resetPanel('apertura')">Reiniciar apertura</button>
+</div>
+
+<!-- PRODUCCIÓN -->
+<div class="panel" id="panel-produccion">
+  <div class="progress-card">
+    <div class="progress-top">
+      <span class="progress-name">Producción &nbsp;09:00 – 12:00</span>
+      <span class="progress-pct pct-produccion" id="txt-produccion">0%</span>
+    </div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill fill-produccion" id="bar-produccion" style="width:0%"></div></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Regla del bloque</div>
+    <div class="item" onclick="toggle(this,'produccion')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Ya decidí qué produzco hoy</div><div class="item-hint">Si no lo decidiste en apertura, decídelo antes de empezar.</div></div></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Salsas y jarabes</div>
+    <div class="item" onclick="toggle(this,'produccion')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Revisar niveles: caramelo, chocolate, lechera, crema de avellana</div></div></div>
+    <div class="item" onclick="toggle(this,'produccion')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Rellenar o preparar los que hacen falta</div><div class="item-hint">Caramelo y jarabes de vainilla y canela son caseros — prioridad si están bajos.</div></div></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Proteínas y complementos</div>
+    <div class="item" onclick="toggle(this,'produccion')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Revisar stock: carne, pollo, queso, salsa chipotle</div></div></div>
+    <div class="item" onclick="toggle(this,'produccion')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Surtir o preparar lo que hace falta</div></div></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Waffles</div>
+    <div class="item" onclick="toggle(this,'produccion')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Revisar stock de waffles</div></div></div>
+    <div class="item" onclick="toggle(this,'produccion')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Preparar y hornear los que faltan</div></div></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Cheesecake</div>
+    <div class="item" onclick="toggle(this,'produccion')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Revisar porciones disponibles</div></div></div>
+    <div class="item" onclick="toggle(this,'produccion')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Preparar cheesecakes para el día o día siguiente</div></div></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Al terminar el bloque</div>
+    <div class="item" onclick="toggle(this,'produccion')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">¿Terminé lo que planeé producir?</div><div class="item-hint">Si no: se mueve a mañana. No se invade el bloque de contenido.</div></div></div>
+  </div>
+
+  <div class="done-banner" id="done-produccion">Producción del bloque lista.</div>
+  <button class="reset-panel-btn" onclick="resetPanel('produccion')">Reiniciar producción</button>
+</div>
+
+<!-- CONTENIDO -->
+<div class="panel" id="panel-contenido">
+  <div class="progress-card">
+    <div class="progress-top">
+      <span class="progress-name">Contenido &nbsp;12:00 – 16:00</span>
+      <span class="progress-pct pct-contenido" id="txt-contenido">0%</span>
+    </div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill fill-contenido" id="bar-contenido" style="width:0%"></div></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Antes de empezar</div>
+    <div class="item" onclick="toggle(this,'contenido')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Revisar qué toca hoy</div><div class="item-hint">Ma: redes · Mi: diseño · Ju: estrategia · Vi: aprendizaje · Sá: comodín</div></div></div>
+    <div class="item" onclick="toggle(this,'contenido')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Silenciar notificaciones</div><div class="item-hint">Este bloque no se interrumpe.</div></div></div>
+  </div>
+
+  <div class="question-card">
+    <div class="question-label">¿Qué voy a lograr en este bloque hoy?</div>
+    <textarea class="question-input" rows="2" placeholder="Ej: grabar y editar reel del proceso del caramelo..."></textarea>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Durante y al terminar</div>
+    <div class="item" onclick="toggle(this,'contenido')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Completar la tarea definida arriba</div></div></div>
+    <div class="item" onclick="toggle(this,'contenido')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">¿Terminé lo que planeé?</div><div class="item-hint">Si no: se anota para el sábado comodín.</div></div></div>
+  </div>
+
+  <div class="done-banner" id="done-contenido">Bloque de contenido completo.</div>
+  <button class="reset-panel-btn" onclick="resetPanel('contenido')">Reiniciar contenido</button>
+</div>
+
+<!-- TRABAJO LIGERO -->
+<div class="panel" id="panel-ligero">
+  <div class="progress-card">
+    <div class="progress-top">
+      <span class="progress-name">T. Ligero &nbsp;17:00 – 19:00</span>
+      <span class="progress-pct pct-ligero" id="txt-ligero">0%</span>
+    </div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill fill-ligero" id="bar-ligero" style="width:0%"></div></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Siempre</div>
+    <div class="item" onclick="toggle(this,'ligero')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Etiquetar vasos</div></div></div>
+    <div class="item" onclick="toggle(this,'ligero')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Resurtir secos</div><div class="item-hint">Azúcar, servilletas, pajillas, etc.</div></div></div>
+    <div class="item" onclick="toggle(this,'ligero')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Anotar pedidos del día siguiente</div></div></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Si hay tiempo</div>
+    <div class="item" onclick="toggle(this,'ligero')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Revisar que inventario cuadre con lo producido hoy</div></div></div>
+  </div>
+
+  <div class="done-banner" id="done-ligero">Trabajo ligero completo.</div>
+  <button class="reset-panel-btn" onclick="resetPanel('ligero')">Reiniciar trabajo ligero</button>
+</div>
+
+<!-- CIERRE -->
+<div class="panel" id="panel-cierre">
+  <div class="progress-card">
+    <div class="progress-top">
+      <span class="progress-name">Cierre &nbsp;19:00 – 21:00</span>
+      <span class="progress-pct pct-cierre" id="txt-cierre">0%</span>
+    </div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill fill-cierre" id="bar-cierre" style="width:0%"></div></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Limpieza</div>
+    <div class="item" onclick="toggle(this,'cierre')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Barrer</div></div></div>
+    <div class="item" onclick="toggle(this,'cierre')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Trapear</div></div></div>
+    <div class="item" onclick="toggle(this,'cierre')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Sacar basura</div></div></div>
+    <div class="item" onclick="toggle(this,'cierre')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Lavar y guardar cafetera</div></div></div>
+    <div class="item" onclick="toggle(this,'cierre')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Lavar plancha</div></div></div>
+    <div class="item" onclick="toggle(this,'cierre')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Limpiar mesas de trabajo</div></div></div>
+    <div class="item" onclick="toggle(this,'cierre')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Acomodar trastes lavados</div></div></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Operativo</div>
+    <div class="item" onclick="toggle(this,'cierre')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Contar caja del día</div></div></div>
+    <div class="item" onclick="toggle(this,'cierre')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Meter sillas y letrero</div></div></div>
+    <div class="item" onclick="toggle(this,'cierre')"><div class="checkbox"><svg class="checkmark" width="13" height="13" viewBox="0 0 13 13"><polyline points="2,7 5.5,10.5 11,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="item-body"><div class="item-label">Cerrar ventana del negocio</div></div></div>
+  </div>
+
+  <div class="question-card">
+    <div class="question-label">¿Qué se agotó o está por acabarse?</div>
+    <textarea class="question-input" rows="2" placeholder="Ej: caramelo casi vacío, carne ok, chipotle se acabó..."></textarea>
+  </div>
+  <div class="question-card">
+    <div class="question-label">¿Qué produzco o surtro mañana?</div>
+    <textarea class="question-input" rows="2" placeholder="Ej: jarabe de vainilla, waffles, surtir pollo..."></textarea>
+  </div>
+
+  <div class="done-banner" id="done-cierre">Cierre completo. ¡Buen trabajo hoy!</div>
+  <button class="reset-panel-btn" onclick="resetPanel('cierre')">Reiniciar cierre</button>
+</div>
+
+<script>
+// Fecha
+const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const hoy = new Date();
+document.getElementById('fecha').textContent = `${dias[hoy.getDay()]} ${hoy.getDate()} ${meses[hoy.getMonth()]}`;
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`.tab[data-tab="${name}"]`).classList.add('active');
+  document.getElementById(`panel-${name}`).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function toggle(el, panel) {
+  el.classList.toggle('done');
+  updateBar(panel);
+}
+
+function updateBar(panel) {
+  const wrap = document.getElementById(`panel-${panel}`);
+  const all  = wrap.querySelectorAll('.item').length;
+  const done = wrap.querySelectorAll('.item.done').length;
+  const pct  = all ? Math.round((done / all) * 100) : 0;
+  document.getElementById(`bar-${panel}`).style.width = pct + '%';
+  document.getElementById(`txt-${panel}`).textContent = pct + '%';
+  document.getElementById(`done-${panel}`).style.display = pct === 100 ? 'block' : 'none';
+}
+
+function resetPanel(panel) {
+  const wrap = document.getElementById(`panel-${panel}`);
+  wrap.querySelectorAll('.item').forEach(el => el.classList.remove('done'));
+  wrap.querySelectorAll('textarea').forEach(el => el.value = '');
+  updateBar(panel);
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>
